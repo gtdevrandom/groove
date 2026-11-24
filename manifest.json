@@ -1,0 +1,20 @@
+{
+  "name": "Groove — votre espace musical",
+  "short_name": "Groove",
+  "description": "Découvrez, écoutez et retrouvez vos morceaux préférés.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090b0b",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
