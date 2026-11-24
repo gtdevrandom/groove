@@ -99,7 +99,9 @@ Après publication d'une nouvelle version, le service worker se met à jour. Si 
 
 Publiez l'application en HTTPS, ouvrez-la dans le navigateur du téléphone, puis choisissez **Ajouter à l'écran d'accueil** (ou l'option équivalente du navigateur). Le manifeste fournit le nom, les couleurs et l'icône de l'application.
 
-Media Session peut afficher les titres et les commandes de lecture sur l'écran verrouillé lorsque le navigateur et le système le prennent en charge. La lecture écran éteint n'est pas garantie : iOS/Safari, Android, les politiques de lecture en arrière-plan, les codecs et YouTube peuvent suspendre ou arrêter un lecteur intégré. Une page web ne peut pas forcer le système à maintenir cette lecture active.
+Groove précharge le lecteur YouTube, démarre la vidéo à la suite d'une action explicite et fournit les métadonnées et commandes Media Session lorsque le navigateur les prend en charge. Sur Android, installez la PWA et démarrez la lecture depuis Groove avant de verrouiller l'écran. Si le navigateur bloque le démarrage automatique, appuyez d'abord sur Lecture dans le lecteur YouTube.
+
+Cela améliore la compatibilité, mais ne garantit pas la lecture écran éteint : iOS/Safari, Android, les politiques de lecture en arrière-plan, les codecs et YouTube peuvent suspendre ou arrêter un lecteur intégré. Une page web ne peut pas forcer le système à maintenir cette lecture active.
 
 ## Données et confidentialité
 

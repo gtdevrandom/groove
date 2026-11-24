@@ -48,6 +48,8 @@ const state = {
   searchRequest: 0,
   progressTimer: null,
   ytPlayer: null,
+  ytPlayerReady: false,
+  ytPlayerPromise: null,
   youtubeApiPromise: null,
   searchController: null
 };
@@ -544,28 +546,51 @@ function playQueue(tracks, index) {
   });
 }
 
-async function startYouTubePlayback(track) {
-  const YT = await loadYouTubeApi();
-  if (state.ytPlayer) {
+function startYouTubePlayback(track) {
+  if (state.ytPlayer && state.ytPlayerReady) {
     state.ytPlayer.loadVideoById(track.id);
     state.ytPlayer.setVolume(state.volume);
-    return;
+    return Promise.resolve();
   }
-  state.ytPlayer = new YT.Player('youtube-player', {
-    width: '320',
-    height: '200',
-    videoId: track.id,
-    playerVars: { playsinline: 1, rel: 0, controls: 1, origin: location.origin },
-    events: {
-      onReady(event) {
-        state.ytPlayer = event.target;
-        state.ytPlayer.setVolume(state.volume);
-        state.ytPlayer.playVideo();
-      },
-      onStateChange: handleYouTubeState,
-      onError: handleYouTubeError
-    }
+  return initializeYouTubePlayer().then(player => {
+    if (state.currentTrack?.id !== track.id || !state.isPlaying) return;
+    player.loadVideoById(track.id);
   });
+}
+
+function initializeYouTubePlayer() {
+  if (state.ytPlayerReady) return Promise.resolve(state.ytPlayer);
+  if (state.ytPlayerPromise) return state.ytPlayerPromise;
+  state.ytPlayerPromise = loadYouTubeApi().then(YT => new Promise((resolve, reject) => {
+    let isReady = false;
+    const player = new YT.Player('youtube-player', {
+      width: '320',
+      height: '200',
+      playerVars: { playsinline: 1, rel: 0, controls: 1, origin: location.origin },
+      events: {
+        onReady(event) {
+          isReady = true;
+          state.ytPlayer = event.target;
+          state.ytPlayerReady = true;
+          state.ytPlayer.setVolume(state.volume);
+          resolve(state.ytPlayer);
+        },
+        onStateChange: handleYouTubeState,
+        onAutoplayBlocked: handleAutoplayBlocked,
+        onError(event) {
+          handleYouTubeError(event);
+          if (!isReady) reject(new Error('Le lecteur YouTube n’a pas pu être initialisé.'));
+        }
+      }
+    });
+    state.ytPlayer = player;
+  })).catch(error => {
+    state.ytPlayer = null;
+    state.ytPlayerReady = false;
+    state.ytPlayerPromise = null;
+    throw error;
+  });
+  return state.ytPlayerPromise;
 }
 
 function loadYouTubeApi() {
@@ -646,6 +671,14 @@ function handleYouTubeError(event) {
   stopProgressUpdates();
   updateMediaSession();
   showToast(messages[event.data] || 'La vidéo YouTube n’a pas pu être lue.', true);
+}
+
+function handleAutoplayBlocked() {
+  if (!state.currentTrack) return;
+  state.isPlaying = false;
+  renderPlayer();
+  updateMediaSession();
+  showToast('Lecture automatique bloquée. Touchez ▶ directement dans la vidéo YouTube. Une fois la lecture démarrée, testez l’écran verrouillé.', true);
 }
 
 function togglePlayback() {
@@ -812,6 +845,7 @@ function updateMediaSession() {
       ] : []
     });
   }
+  if (!navigator.mediaSession.setActionHandler) return;
   const actions = {
     play: () => state.ytPlayer?.playVideo(),
     pause: () => state.ytPlayer?.pauseVideo(),
@@ -1118,6 +1152,11 @@ function initialize() {
     if (state.isPlaying) updateProgress();
     flushListeningStats(true);
   });
+  window.addEventListener('load', () => {
+    initializeYouTubePlayer().catch(error => {
+      console.warn('Le lecteur YouTube sera initialisé au premier essai de lecture.', error);
+    });
+  }, { once: true });
   registerServiceWorker();
 }
 
